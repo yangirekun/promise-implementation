@@ -31,6 +31,10 @@ export default class PromiseImplementation {
         }, 0);
     }
 
+    static resolve(value?: any) {
+        return new PromiseImplementation((resolve, reject) => resolve(value));
+    }
+
     private rejectNext?: ExecutorCallback;
     private reject(error?: any) {
         setTimeout(() => {
@@ -43,6 +47,10 @@ export default class PromiseImplementation {
                 }
             }
         }, 0);
+    }
+
+    static reject(error?: any) {
+        return new PromiseImplementation((resolve, reject) => reject(error));
     }
 
     private consumerArgs: ConsumerCallback[] = [];
