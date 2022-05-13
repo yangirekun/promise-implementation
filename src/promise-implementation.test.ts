@@ -575,6 +575,15 @@ describe('Promise implementation, async chaining', () => {
         });
     });
 
+    test('it should call .catch after exception in constructor', (done) => {
+        new PromiseImplementation((resolve, reject) => {
+            throw new Error('Whooops!');
+        }).catch((err) => {
+            expect(err.message).toBe('Whooops!');
+            done();
+        });
+    });
+
     test('it should call .catch at the end of the chain and "ignore" .then handlers', (done) => {
         new PromiseImplementation((resolve, reject) => {
             setTimeout(() => {

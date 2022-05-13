@@ -12,8 +12,11 @@ export default class PromiseImplementation {
                 throw new Error('No executor provided.');
             }
         } catch (err) {
-            // console.error(err);
-            throw new Error(err);
+            if (err.message === 'No executor provided.') {
+                throw err;
+            }
+
+            this.reject(err);
         }
     }
 
