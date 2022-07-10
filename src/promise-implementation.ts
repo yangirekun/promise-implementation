@@ -20,18 +20,19 @@ export default class PromiseImplementation {
         }
     }
 
+    private consumerCalls = 0;
+    private consumerArgs: ConsumerCallback[] = [];
+
     private resolveNext?: ExecutorCallback;
     private resolve(value?: any) {
-        setTimeout(() => {
-            if (this.state === 'pending') {
-                this.state = 'fulfilled';
-                this.result = value;
+        if (this.state === 'pending') {
+            this.state = 'fulfilled';
+            this.result = value;
 
-                if (this.consumerArgs.length) {
-                    this.then(...this.consumerArgs);
-                }
+            if (this.consumerArgs.length) {
+                this.then(...this.consumerArgs);
             }
-        }, 0);
+        }
     }
 
     static resolve(value?: any) {
@@ -40,25 +41,18 @@ export default class PromiseImplementation {
 
     private rejectNext?: ExecutorCallback;
     private reject(error?: any) {
-        setTimeout(() => {
-            if (this.state === 'pending') {
-                this.state = 'rejected';
-                this.result = error;
+        if (this.state === 'pending') {
+            this.state = 'rejected';
+            this.result = error;
 
-                if (this.consumerArgs.length) {
-                    this.then(...this.consumerArgs);
-                }
+            if (this.consumerArgs.length) {
+                this.then(...this.consumerArgs);
             }
-        }, 0);
+        }
     }
 
     static reject(error?: any) {
         return new PromiseImplementation((resolve, reject) => reject(error));
-    }
-
-    private consumerArgs: ConsumerCallback[] = [];
-    private saveConsumerArgs(...args: ConsumerCallback[]) {
-        this.consumerArgs = args;
     }
 
     private handleResult(result: any, handler?: ConsumerCallback, state?: PromiseState) {
@@ -96,29 +90,34 @@ export default class PromiseImplementation {
             return this;
         }
 
-        const { state, result } = this;
+        setTimeout(() => {
+            const { state, result } = this;
 
-        if (state === 'pending') {
-            this.saveConsumerArgs(handleSuccess, handleError);
+            if (state !== 'pending') {
+                if (handleSuccess === handleError) {
+                    this.handleFinally(result, handleSuccess || handleError, state);
+
+                    return;
+                }
+
+                if (state === 'fulfilled') {
+                    this.handleResult(result, handleSuccess, state);
+                }
+
+                if (state === 'rejected') {
+                    this.handleResult(result, handleError, state);
+                }
+            }
+        }, 0);
+
+        if (this.consumerCalls === 0) {
+            this.consumerCalls += 1;
+            this.consumerArgs = [handleSuccess, handleError];
 
             return new PromiseImplementation((resolve, reject) => {
                 this.resolveNext = resolve;
                 this.rejectNext = reject;
             });
-        }
-
-        if (handleSuccess === handleError) {
-            this.handleFinally(result, handleSuccess || handleError, state);
-
-            return;
-        }
-
-        if (state === 'fulfilled') {
-            this.handleResult(result, handleSuccess, state);
-        }
-
-        if (state === 'rejected') {
-            this.handleResult(result, handleError, state);
         }
     };
 

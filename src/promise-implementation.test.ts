@@ -16,94 +16,69 @@ describe('Promise implementation, base', () => {
 });
 
 describe('Promise implementation, sync', () => {
-    test('it should have the correct state after resolve', (done) => {
+    test('it should have the correct state after resolve', () => {
         const promise = new PromiseImplementation((resolve, reject) => {
             resolve('result');
         });
 
-        setTimeout(() => {
-            expect(promise['state']).toBe('fulfilled');
-            expect(promise['result']).toBe('result');
-
-            done();
-        }, 0);
+        expect(promise['state']).toBe('fulfilled');
+        expect(promise['result']).toBe('result');
     });
 
-    test('it should have the correct state after reject', (done) => {
+    test('it should have the correct state after reject', () => {
         const promise = new PromiseImplementation((resolve, reject) => {
             reject('error');
         });
 
-        setTimeout(() => {
-            expect(promise['state']).toBe('rejected');
-            expect(promise['result']).toBe('error');
-
-            done();
-        }, 0);
+        expect(promise['state']).toBe('rejected');
+        expect(promise['result']).toBe('error');
     });
 
-    test('it should call resolve | reject only once', (done) => {
+    test('it should call resolve | reject only once', () => {
         const promise1 = new PromiseImplementation((resolve, reject) => {
             resolve('result');
             resolve('another result');
         });
 
-        setTimeout(() => {
-            expect(promise1['state']).toBe('fulfilled');
-            expect(promise1['result']).toBe('result');
-
-            done();
-        }, 0);
+        expect(promise1['state']).toBe('fulfilled');
+        expect(promise1['result']).toBe('result');
 
         const promise2 = new PromiseImplementation((resolve, reject) => {
             reject('error');
             reject('another error');
         });
 
-        setTimeout(() => {
-            expect(promise2['state']).toBe('rejected');
-            expect(promise2['result']).toBe('error');
-
-            done();
-        }, 0);
+        expect(promise2['state']).toBe('rejected');
+        expect(promise2['result']).toBe('error');
 
         const promise3 = new PromiseImplementation((resolve, reject) => {
             resolve('result');
             reject('error');
         });
 
-        setTimeout(() => {
-            expect(promise3['state']).toBe('fulfilled');
-            expect(promise3['result']).toBe('result');
-
-            done();
-        }, 0);
+        expect(promise3['state']).toBe('fulfilled');
+        expect(promise3['result']).toBe('result');
 
         const promise4 = new PromiseImplementation((resolve, reject) => {
             reject('error');
             resolve('another error');
         });
 
-        setTimeout(() => {
-            expect(promise4['state']).toBe('rejected');
-            expect(promise4['result']).toBe('error');
-
-            done();
-        }, 0);
+        expect(promise4['state']).toBe('rejected');
+        expect(promise4['result']).toBe('error');
     });
 });
 
 describe('Promise implementation, sync chaining', () => {
-    test('it should call .then and pass result to it after resolve', (done) => {
+    test('it should call .then and pass result to it after resolve', () => {
         new PromiseImplementation((resolve, reject) => {
             resolve('result');
         }).then((result) => {
             expect(result).toBe('result');
-            done();
         });
     });
 
-    test('it should pass results through the chain', (done) => {
+    test('it should pass results through the chain', () => {
         new PromiseImplementation((resolve, reject) => {
             resolve(1);
         })
@@ -117,22 +92,20 @@ describe('Promise implementation, sync chaining', () => {
             })
             .then((result) => {
                 expect(result).toBe(4);
-                done();
             });
     });
 
-    test('it should ignore "empty" .then in chain', (done) => {
+    test('it should ignore "empty" .then in chain', () => {
         new PromiseImplementation((resolve, reject) => {
             resolve('result');
         })
             .then()
             .then((result) => {
                 expect(result).toBe('result');
-                done();
             });
     });
 
-    test('it should correctly handle return of resolved promise in the arbitary .then', (done) => {
+    test('it should correctly handle return of resolved promise in the arbitary .then', () => {
         new PromiseImplementation((resolve, reject) => {
             resolve(1);
         })
@@ -143,11 +116,10 @@ describe('Promise implementation, sync chaining', () => {
             })
             .then((result) => {
                 expect(result).toBe(2);
-                done();
             });
     });
 
-    test('it should correctly handle return of rejected promise in the arbitary .then', (done) => {
+    test('it should correctly handle return of rejected promise in the arbitary .then', () => {
         new PromiseImplementation((resolve, reject) => {
             resolve(1);
         })
@@ -162,20 +134,18 @@ describe('Promise implementation, sync chaining', () => {
             })
             .catch((error) => {
                 expect(error).toBe('error');
-                done();
             });
     });
 
-    test('it should call .catch and pass error to it after reject', (done) => {
+    test('it should call .catch and pass error to it after reject', () => {
         new PromiseImplementation((resolve, reject) => {
             reject('error');
         }).catch((err) => {
             expect(err).toBe('error');
-            done();
         });
     });
 
-    test('it should call .catch at the end of the chain and "ignore" .then handlers', (done) => {
+    test('it should call .catch at the end of the chain and "ignore" .then handlers', () => {
         new PromiseImplementation((resolve, reject) => {
             reject('error');
         })
@@ -189,11 +159,10 @@ describe('Promise implementation, sync chaining', () => {
             })
             .catch((err) => {
                 expect(err).toBe('error');
-                done();
             });
     });
 
-    test('it should call .catch, when error is occured in arbitary .then', (done) => {
+    test('it should call .catch, when error is occured in arbitary .then', () => {
         new PromiseImplementation((resolve, reject) => {
             resolve(1);
         })
@@ -207,11 +176,10 @@ describe('Promise implementation, sync chaining', () => {
             })
             .catch((err) => {
                 expect(err.message).toBe('error in .then');
-                done();
             });
     });
 
-    test('it should call .catch after rethrow', (done) => {
+    test('it should call .catch after rethrow', () => {
         new PromiseImplementation((resolve, reject) => {
             reject('error');
         })
@@ -229,11 +197,10 @@ describe('Promise implementation, sync chaining', () => {
             })
             .catch((err) => {
                 expect(err.message).toBe('another error');
-                done();
             });
     });
 
-    test('it should call .then after error handling', (done) => {
+    test('it should call .then after error handling', () => {
         new PromiseImplementation((resolve, reject) => {
             reject('error');
         })
@@ -251,11 +218,10 @@ describe('Promise implementation, sync chaining', () => {
             })
             .then((result) => {
                 expect(result).toBe('result from error handler');
-                done();
             });
     });
 
-    test('it should correctly handle return of resolved promise in .catch', (done) => {
+    test('it should correctly handle return of resolved promise in .catch', () => {
         new PromiseImplementation((resolve, reject) => {
             reject('Whoops');
         })
@@ -268,11 +234,10 @@ describe('Promise implementation, sync chaining', () => {
             })
             .then((result) => {
                 expect(result).toBe(1);
-                done();
             });
     });
 
-    test('it should correctly handle return of rejected promise in .catch', (done) => {
+    test('it should correctly handle return of rejected promise in .catch', () => {
         new PromiseImplementation((resolve, reject) => {
             reject('Whoops');
         })
@@ -285,11 +250,10 @@ describe('Promise implementation, sync chaining', () => {
             })
             .catch((err) => {
                 expect(err).toBe('another error');
-                done();
             });
     });
 
-    test('it should call .then after .finally without args and affection on next .then', (done) => {
+    test('it should call .then after .finally without args and affection on next .then', () => {
         new PromiseImplementation((resolve, reject) => {
             resolve(1);
         })
@@ -302,11 +266,10 @@ describe('Promise implementation, sync chaining', () => {
             })
             .then((result) => {
                 expect(result).toBe(2);
-                done();
             });
     });
 
-    test('it should call .finally after exception and jump to closest .catch (1)', (done) => {
+    test('it should call .finally after exception and jump to closest .catch (1)', () => {
         new PromiseImplementation((resolve, reject) => {
             resolve(1);
         })
@@ -319,11 +282,10 @@ describe('Promise implementation, sync chaining', () => {
             })
             .catch((err) => {
                 expect(err.message).toBe('Whoops');
-                done();
             });
     });
 
-    test('it should call .finally after exception and jump to closest .catch (2)', (done) => {
+    test('it should call .finally after exception and jump to closest .catch (2)', () => {
         new PromiseImplementation((resolve, reject) => {
             resolve(1);
         })
@@ -339,11 +301,10 @@ describe('Promise implementation, sync chaining', () => {
             })
             .catch((err) => {
                 expect(err.message).toBe('Whoops');
-                done();
             });
     });
 
-    test('it should call .finally after .catch', (done) => {
+    test('it should call .finally after .catch', () => {
         new PromiseImplementation((resolve, reject) => {
             resolve(1);
         })
@@ -356,7 +317,6 @@ describe('Promise implementation, sync chaining', () => {
             })
             .finally((result) => {
                 expect(result).toBeUndefined();
-                done();
             });
     });
 });
@@ -372,7 +332,7 @@ describe('Promise implementation, async', () => {
             expect(promise['result']).toBe('result');
 
             done();
-        }, 1010);
+        }, 1000);
     });
 
     test('it should have the correct state after reject', (done) => {
@@ -385,7 +345,7 @@ describe('Promise implementation, async', () => {
             expect(promise['result']).toBe('error');
 
             done();
-        }, 1010);
+        }, 1000);
     });
 
     test('it should call resolve | reject only once', (done) => {
@@ -401,7 +361,7 @@ describe('Promise implementation, async', () => {
             expect(promise1['result']).toBe('result');
 
             done();
-        }, 1010);
+        }, 1000);
 
         const promise2 = new PromiseImplementation((resolve, reject) => {
             setTimeout(() => {
@@ -415,7 +375,7 @@ describe('Promise implementation, async', () => {
             expect(promise2['result']).toBe('error');
 
             done();
-        }, 1010);
+        }, 1000);
 
         const promise3 = new PromiseImplementation((resolve, reject) => {
             setTimeout(() => {
@@ -429,7 +389,7 @@ describe('Promise implementation, async', () => {
             expect(promise3['result']).toBe('result');
 
             done();
-        }, 1010);
+        }, 1000);
 
         const promise4 = new PromiseImplementation((resolve, reject) => {
             setTimeout(() => {
@@ -443,7 +403,7 @@ describe('Promise implementation, async', () => {
             expect(promise4['result']).toBe('error');
 
             done();
-        }, 1010);
+        }, 1000);
     });
 });
 
