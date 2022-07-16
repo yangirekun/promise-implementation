@@ -85,7 +85,7 @@ export default class PromiseImplementation {
         const { resolveNext, rejectNext } = this.getConsumerInstanceSettlers();
 
         try {
-            const handlerResult = handler ? handler(result) : result;
+            const handlerResult = handler && handler(result);
 
             if (handlerResult instanceof PromiseImplementation) {
                 const resolve = (result) => resolveNext(result);
@@ -97,7 +97,7 @@ export default class PromiseImplementation {
             }
 
             if (state === 'rejected' && !handler) {
-                rejectNext(handlerResult);
+                rejectNext(result);
 
                 return;
             }
@@ -112,7 +112,7 @@ export default class PromiseImplementation {
         const { resolveNext, rejectNext } = this.getConsumerInstanceSettlers();
 
         try {
-            const handlerResult = handler();
+            const handlerResult = handler && handler();
 
             if (handlerResult instanceof PromiseImplementation) {
                 const resolve = () => resolveNext(result);
