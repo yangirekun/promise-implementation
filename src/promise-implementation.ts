@@ -22,6 +22,7 @@ export default class PromiseImplementation {
 
     private currentConsumerIndex = 0;
     private consumersArgs: ConsumerCallback[][] = [];
+    private consumerShouldReturnInstance = true;
     private consumersInstanceSettlers: {
         resolvers: ExecutorCallback[];
         rejecters: ExecutorCallback[];
@@ -30,17 +31,28 @@ export default class PromiseImplementation {
         rejecters: [],
     };
 
+    private getConsumerInstanceSettlers() {
+        const index = this.currentConsumerIndex++;
+
+        const resolveNext = this.consumersInstanceSettlers.resolvers[index];
+        const rejectNext = this.consumersInstanceSettlers.rejecters[index];
+
+        return {
+            resolveNext,
+            rejectNext,
+        };
+    }
+
     private resolve(value?: any) {
         if (this.state === 'pending') {
             this.state = 'fulfilled';
             this.result = value;
 
             if (this.consumersArgs.length) {
-                for (let i = 0; i < this.consumersArgs.length; i++) {
-                    const handleSuccess = this.consumersArgs[i][0];
-                    const handleError = this.consumersArgs[i][1];
+                this.consumerShouldReturnInstance = false;
 
-                    this.then(handleSuccess, handleError, false);
+                for (let consumerArgs of this.consumersArgs) {
+                    this.then(...consumerArgs);
                 }
             }
         }
@@ -56,11 +68,10 @@ export default class PromiseImplementation {
             this.result = error;
 
             if (this.consumersArgs.length) {
-                for (let i = 0; i < this.consumersArgs.length; i++) {
-                    const handleSuccess = this.consumersArgs[i][0];
-                    const handleError = this.consumersArgs[i][1];
+                this.consumerShouldReturnInstance = false;
 
-                    this.then(handleSuccess, handleError, false);
+                for (let consumerArgs of this.consumersArgs) {
+                    this.then(...consumerArgs);
                 }
             }
         }
@@ -71,24 +82,21 @@ export default class PromiseImplementation {
     }
 
     private handleResult(result: any, handler?: ConsumerCallback, state?: PromiseState) {
-        const index = this.currentConsumerIndex++;
-
-        const resolveNext = this.consumersInstanceSettlers.resolvers[index];
-        const rejectNext = this.consumersInstanceSettlers.rejecters[index];
+        const { resolveNext, rejectNext } = this.getConsumerInstanceSettlers();
 
         try {
             const handlerResult = handler ? handler(result) : result;
 
             if (handlerResult instanceof PromiseImplementation) {
-                handlerResult.then(
-                    (result) => resolveNext(result),
-                    (error) => rejectNext(error)
-                );
+                const resolve = (result) => resolveNext(result);
+                const reject = (err) => rejectNext(err);
+
+                handlerResult.then(resolve, reject);
 
                 return;
             }
 
-            if (!handler && state === 'rejected') {
+            if (state === 'rejected' && !handler) {
                 rejectNext(handlerResult);
 
                 return;
@@ -96,30 +104,46 @@ export default class PromiseImplementation {
 
             resolveNext(handlerResult);
         } catch (err) {
-            this.consumersInstanceSettlers.rejecters[index](err);
+            rejectNext(err);
         }
     }
 
-    private handleFinally(result: any, handler: ConsumerCallback, state: PromiseState) {
+    private handleFinally(result: any, handler?: ConsumerCallback, state?: PromiseState) {
+        const { resolveNext, rejectNext } = this.getConsumerInstanceSettlers();
+
         try {
-            handler();
+            const handlerResult = handler();
+
+            if (handlerResult instanceof PromiseImplementation) {
+                const resolve = () => resolveNext(result);
+                const reject = (err) => rejectNext(err);
+
+                handlerResult.then(resolve, reject);
+
+                return;
+            }
+
+            if (state === 'rejected') {
+                rejectNext(result);
+
+                return;
+            }
+
+            resolveNext(result);
         } catch (err) {
-            this.handleResult(err, undefined, 'rejected');
-
-            return;
+            rejectNext(err);
         }
-
-        this.handleResult(result, undefined, state);
     }
 
-    then = (handleSuccess?: ConsumerCallback, handleError?: ConsumerCallback, shouldReturnInstance = true) => {
+    then = (handleSuccess?: ConsumerCallback, handleError?: ConsumerCallback) => {
         if (!handleSuccess && !handleError) {
             return this;
         }
 
         const { state, result } = this;
+        const isSettled = state !== 'pending' && 'result' in this;
 
-        if (state !== 'pending' && 'result' in this) {
+        if (isSettled) {
             setTimeout(() => {
                 if (handleSuccess === handleError) {
                     this.handleFinally(result, handleSuccess || handleError, state);
@@ -137,8 +161,10 @@ export default class PromiseImplementation {
             }, 0);
         }
 
-        if (shouldReturnInstance) {
-            this.consumersArgs.push([handleSuccess, handleError]);
+        if (this.consumerShouldReturnInstance) {
+            if (!isSettled) {
+                this.consumersArgs.push([handleSuccess, handleError]);
+            }
 
             return new PromiseImplementation((resolve, reject) => {
                 this.consumersInstanceSettlers.resolvers.push(resolve);

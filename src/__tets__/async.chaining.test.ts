@@ -57,7 +57,7 @@ describe('Promise implementation, async chaining', () => {
             .then((result) => {
                 expect(result).toBe(4);
                 return new PromiseImplementation((resolve) => {
-                    resolve(result * 2);
+                    setTimeout(() => resolve(result * 2), 100);
                 });
             })
             .then((result) => {
@@ -291,6 +291,53 @@ describe('Promise implementation, async chaining', () => {
         expect.assertions(2);
     });
 
+    test('it should correctly handle return of resolved promise in .finally', (done) => {
+        new PromiseImplementation((resolve, reject) => {
+            setTimeout(() => {
+                resolve(1);
+            }, 100);
+        })
+            .finally(() => {
+                return new PromiseImplementation((resolve, reject) => {
+                    setTimeout(() => {
+                        resolve(2);
+                    }, 100);
+                });
+            })
+            .then((result) => {
+                expect(result).toBe(1);
+                done();
+            });
+
+        expect.assertions(1);
+    });
+
+    test('it should correctly handle return of rejected promise in .finally', (done) => {
+        new PromiseImplementation((resolve, reject) => {
+            setTimeout(() => {
+                resolve(1);
+            }, 100);
+        })
+            .finally(() => {
+                return new PromiseImplementation((resolve, reject) => {
+                    setTimeout(() => {
+                        reject('error from finally');
+                    }, 100);
+                });
+            })
+            .then((result) => {
+                // wouldn't invoke
+                expect(result).toBe('blablabla');
+                return result * 2;
+            })
+            .catch((err) => {
+                expect(err).toBe('error from finally');
+                done();
+            });
+
+        expect.assertions(1);
+    });
+
     test('it should call .then after .finally without args and affection on next .then', (done) => {
         new PromiseImplementation((resolve, reject) => {
             setTimeout(() => {
@@ -373,6 +420,29 @@ describe('Promise implementation, async chaining', () => {
             })
             .finally((result) => {
                 expect(result).toBeUndefined();
+                done();
+            });
+
+        expect.assertions(2);
+    });
+
+    test('it should call .catch after exception in .finally', (done) => {
+        new PromiseImplementation((resolve, reject) => {
+            setTimeout(() => {
+                resolve(1);
+            }, 100);
+        })
+            .finally((result) => {
+                expect(result).toBeUndefined();
+                throw new Error('Whoops!');
+            })
+            .then((res) => {
+                // wouldn't invoke
+                expect(res).toBe('blablabla');
+                return 4;
+            })
+            .catch((err) => {
+                expect(err.message).toBe('Whoops!');
                 done();
             });
 

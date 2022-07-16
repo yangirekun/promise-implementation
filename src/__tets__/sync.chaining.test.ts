@@ -32,6 +32,36 @@ describe('Promise implementation, sync chaining', () => {
         expect.assertions(3);
     });
 
+    test('it should pass results through the chain of promises', (done) => {
+        new PromiseImplementation((resolve, reject) => {
+            resolve(1);
+        })
+            .then((result) => {
+                expect(result).toBe(1);
+                return new PromiseImplementation((resolve) => {
+                    resolve(result * 2);
+                });
+            })
+            .then((result) => {
+                expect(result).toBe(2);
+                return new PromiseImplementation((resolve) => {
+                    resolve(result * 2);
+                });
+            })
+            .then((result) => {
+                expect(result).toBe(4);
+                return new PromiseImplementation((resolve) => {
+                    resolve(result * 2);
+                });
+            })
+            .then((result) => {
+                expect(result).toBe(8);
+                done();
+            });
+
+        expect.assertions(4);
+    });
+
     test('it should ignore "empty" .then in chain', (done) => {
         new PromiseImplementation((resolve, reject) => {
             resolve('result');
@@ -227,6 +257,45 @@ describe('Promise implementation, sync chaining', () => {
         expect.assertions(2);
     });
 
+    test('it should correctly handle return of resolved promise in .finally', (done) => {
+        new PromiseImplementation((resolve, reject) => {
+            resolve(1);
+        })
+            .finally(() => {
+                return new PromiseImplementation((resolve, reject) => {
+                    resolve(2);
+                });
+            })
+            .then((result) => {
+                expect(result).toBe(1);
+                done();
+            });
+
+        expect.assertions(1);
+    });
+
+    test('it should correctly handle return of rejected promise in .finally', (done) => {
+        new PromiseImplementation((resolve, reject) => {
+            resolve(1);
+        })
+            .finally(() => {
+                return new PromiseImplementation((resolve, reject) => {
+                    reject('error from finally');
+                });
+            })
+            .then((result) => {
+                // wouldn't invoke
+                expect(result).toBe('blablabla');
+                return result * 2;
+            })
+            .catch((err) => {
+                expect(err).toBe('error from finally');
+                done();
+            });
+
+        expect.assertions(1);
+    });
+
     test('it should call .then after .finally without args and affection on next .then', (done) => {
         new PromiseImplementation((resolve, reject) => {
             resolve(1);
@@ -302,6 +371,27 @@ describe('Promise implementation, sync chaining', () => {
             })
             .finally((result) => {
                 expect(result).toBeUndefined();
+                done();
+            });
+
+        expect.assertions(2);
+    });
+
+    test('it should call .catch after exception in .finally', (done) => {
+        new PromiseImplementation((resolve, reject) => {
+            resolve(1);
+        })
+            .finally((result) => {
+                expect(result).toBeUndefined();
+                throw new Error('Whoops!');
+            })
+            .then((res) => {
+                // wouldn't invoke
+                expect(res).toBe('blablabla');
+                return 4;
+            })
+            .catch((err) => {
+                expect(err.message).toBe('Whoops!');
                 done();
             });
 
