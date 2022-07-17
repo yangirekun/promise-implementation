@@ -43,7 +43,7 @@ export default class PromiseImplementation {
         };
     }
 
-    private resolve(value?: any) {
+    private applyResolveMainLogic(value?: any) {
         if (this.state === 'pending') {
             this.state = 'fulfilled';
             this.result = value;
@@ -58,11 +58,32 @@ export default class PromiseImplementation {
         }
     }
 
+    private resolveCallsCount = 0;
+    private resolve(value?: any) {
+        if (this.resolveCallsCount > 0 || this.rejectCallsCount > 0) {
+            this.resolveCallsCount += 1;
+            return;
+        }
+
+        this.resolveCallsCount += 1;
+
+        if (value instanceof PromiseImplementation) {
+            value.then(
+                (result) => this.applyResolveMainLogic(result),
+                (err) => this.applyRejectMainLogic(err)
+            );
+
+            return;
+        }
+
+        this.applyResolveMainLogic(value);
+    }
+
     static resolve(value?: any) {
         return new PromiseImplementation((resolve, reject) => resolve(value));
     }
 
-    private reject(error?: any) {
+    private applyRejectMainLogic(error?: any) {
         if (this.state === 'pending') {
             this.state = 'rejected';
             this.result = error;
@@ -75,6 +96,18 @@ export default class PromiseImplementation {
                 }
             }
         }
+    }
+
+    private rejectCallsCount = 0;
+    private reject(error?: any) {
+        if (this.rejectCallsCount > 0 || this.resolveCallsCount > 0) {
+            this.rejectCallsCount += 1;
+            return;
+        }
+
+        this.rejectCallsCount += 1;
+
+        this.applyRejectMainLogic(error);
     }
 
     static reject(error?: any) {
