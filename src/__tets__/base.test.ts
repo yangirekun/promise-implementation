@@ -4,7 +4,7 @@ describe('Promise implementation, base', () => {
     test('it should throw error if executor is not provided', () => {
         const promiseCreator = () => new PromiseImplementation();
 
-        expect(promiseCreator).toThrow('No executor provided.');
+        expect(promiseCreator).toThrow('Invalid executor is provided.');
     });
 
     test('it should have the correct initial state', () => {

@@ -5,17 +5,13 @@ export default class PromiseImplementation {
     private result: PromiseResult;
 
     constructor(executor?: PromiseExecutor) {
-        try {
-            if (executor) {
-                executor(this.resolve.bind(this), this.reject.bind(this));
-            } else {
-                throw new Error('No executor provided.');
-            }
-        } catch (err) {
-            if (err.message === 'No executor provided.') {
-                throw err;
-            }
+        if (typeof executor !== 'function') {
+            throw new Error('Invalid executor is provided.');
+        }
 
+        try {
+            executor(this.resolve.bind(this), this.reject.bind(this));
+        } catch (err) {
             this.reject(err);
         }
     }
